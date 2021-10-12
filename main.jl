@@ -1,7 +1,7 @@
 include("./setup.jl")
 include("./model.jl")
 include("./core.jl")
-using LinearAlgebra, Random
+using LinearAlgebra, Random, Distributions
 
 EngArray = Vector{MersenneTwister}(undef, nthreads())
 function main(filename::String)

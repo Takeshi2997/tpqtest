@@ -27,7 +27,7 @@ end
 function kernel(x1::State, x2::State, τ::S) where {S<:Real}
     v = norm(x1.spin - x2.spin)^2
     v /= c.NSpin
-    c.B * exp(-v ./ (0.2 + τ))
+    exp(-v ./ (c.B + τ))
 end
 
 function makematrix(K::Array{T}, data_x::Vector{State}, τ::S) where{T<:Complex, S<:Real}

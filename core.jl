@@ -22,7 +22,7 @@ function localenergy_func(t::S, x::State, y::T, τ::S, model::GPmodel)  where {T
     model_loc = GPmodel(model, τ_loc)
     epsi = 0.0im
     @simd for i in 1:c.NSpin
-        ep = y * hamiltonian(i, x, y, model_loc) / 2.0
+        ep = exp(y) * hamiltonian(i, x, y, model_loc) / 2.0
         epsi += ep
     end
     epsi

@@ -10,19 +10,19 @@ function imaginarytime(model::GPmodel)
     @threads for n in 1:c.NData
         x = data_x[n]
         y = data_y[n]
-        epsi = [localenergy_func(t, x, y, τ, model) for t in tset]
+        epsi = [localenergy_func(t, x, τ, model) for t in tset]
         data_y[n] = log(exp(y) - c.Δτ / 2.0 * dot(wset, epsi))
     end
     data_y ./= norm(data_y)
     GPmodel(data_x, data_y, τ + c.Δτ)
 end
 
-function localenergy_func(t::S, x::State, y::T, τ::S, model::GPmodel)  where {T<:Complex, S<:Real}
+function localenergy_func(t::S, x::State, τ::S, model::GPmodel)  where {T<:Complex, S<:Real}
     τ_loc = τ + c.Δτ / 2.0 * (t + 1.0)
     model_loc = GPmodel(model, τ_loc)
     epsi = 0.0im
     @simd for i in 1:c.NSpin
-        ep = exp(y) * hamiltonian(i, x, y, model_loc) / 2.0
+        ep = hamiltonian_psi(i, x, model_loc) / 2.0
         epsi += ep
     end
     epsi

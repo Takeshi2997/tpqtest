@@ -28,4 +28,16 @@ function hamiltonian_XY(i::Integer, x::State, y::T, model::GPmodel) where {T<:Co
     c.t * exp(yflip - y) * (x.spin[i] * x.spin[i%c.NSpin+1] < 0)
 end
 
+function hamiltonian_psi(i::Integer, x::State, model::GPmodel) where {T<:Real}
+    hamiltonian_ising_psi(i, x, model)
+end
+
+function hamiltonian_ising_psi(i::Integer, x::State, model::GPmodel) where {T<:Real}
+    y = predict_f(x, model)
+    xflip_spin = copy(x.spin)
+    xflip_spin[i] *= -1
+    xflip = State(xflip_spin)
+    yflip = predict(xflip, model)
+    -x.spin[i] * x.spin[i%c.NSpin+1] / 4.0 * exp(y) - c.H * exp(yflip) / 2.0
+end
 

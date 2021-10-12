@@ -19,7 +19,7 @@ function GP_Data()
     H = 2.0
     t = 1.0
     J = 1.0
-    Δτ = 0.5
+    Δτ = 0.05
     B = 1.0
     GP_Data(NSpin, NData, NMC, MCSkip, iT, H, t, J, Δτ, B)
 end

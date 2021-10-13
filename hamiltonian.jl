@@ -33,7 +33,7 @@ function hamiltonian_psi(i::Integer, x::State, model::GPmodel) where {T<:Real}
 end
 
 function hamiltonian_ising_psi(i::Integer, x::State, model::GPmodel) where {T<:Real}
-    y = predict_f(x, model)
+    y = predict(x, model)
     xflip_spin = copy(x.spin)
     xflip_spin[i] *= -1
     xflip = State(xflip_spin)

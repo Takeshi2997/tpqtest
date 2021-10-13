@@ -17,7 +17,7 @@ function main(filename::String)
     biI  = Array(Diagonal(ones(Float64, 2 * c.NData)))
     biψ  = rand(MvNormal(bimu, biI))
     data_y = log.(biψ[1:c.NData] .+ im * biψ[c.NData+1:end])
-    model = GPmodel(data_x, data_y, 0.0)
+    model = GPmodel(data_x, data_y, 1e-4)
 
     batch_x = Vector{State}(undef, c.NMC)
     for i in 1:c.NMC
@@ -26,7 +26,7 @@ function main(filename::String)
     end
 
     ene = 0.0
-    β = 0.0
+    β = 1e-4
     for k in 0:c.iT
         ene = energy(batch_x, model)
         open("./data/" * filename, "a") do io

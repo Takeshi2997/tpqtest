@@ -27,13 +27,24 @@ end
 function kernel(x1::State, x2::State, τ::S) where {S<:Real}
     v = norm(x1.spin - x2.spin)^2
     v /= c.NSpin
-    c.B * exp(-v ./ τ)
+    c.B * exp(-v / exp(τ))
 end
 
 function makematrix(K::Array{T}, data_x::Vector{State}, τ::S) where{T<:Complex, S<:Real}
     for i in 1:length(data_x)
         for j in i:length(data_x)
             K[i, j] = kernel(data_x[i], data_x[j], τ)
+            K[j, i] = K[i, j]
+        end
+    end
+end 
+
+function diffmakematrix(K::Array{T}, data_x::Vector{State}, τ::S) where{T<:Complex, S<:Real}
+    for i in 1:length(data_x)
+        for j in i:length(data_x)
+            x1 = data_x[i]
+            x2 = data_x[j]
+            K[i, j] = norm(x1.spin-x2.spin)^2 / exp(τ) * kernel(x1, x2, τ)
             K[j, i] = K[i, j]
         end
     end
@@ -59,3 +70,14 @@ function predict(x::State, model::GPmodel) where {S<:Real}
     log(sqrt(var) * randn(typeof(mu)) + mu)
 end
 
+function diffloglikelifood(τ::S, model::GPmodel)
+    model_loc = GPmodel(model, τ)
+    data_x, pvec, KI = model_loc.data_x, model_loc.pvec, model_loc.KI
+  
+    dK = Array{T}(undef, c.NData, c.NData)
+    diffmakematrix(dK, data_x, τ)
+    -tr(KI * dK) + dot(pvec, dK * pvec)
+end
+    
+
+    

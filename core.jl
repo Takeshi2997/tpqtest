@@ -11,7 +11,14 @@ function imaginarytime(model::GPmodel)
         data_y[n] += log(1.0 - c.NSpin * c.Δτ / 2.0 * h)
     end
     data_y ./= norm(data_y)
-    GPmodel(data_x, data_y, τ + c.Δτ)
+    model_loc = GPmodel(data_x, data_y, τ)
+    τ0 = parameterfitting(model_loc)
+    GPmodel(model_loc, τ0)
+end
+
+function parameterfitting(model::GPmodel) where {S<:Real}
+    τ0 = nls(diffloglikelifood, model, ini=0.2)
+    return τ0
 end
 
 function tryflip(x::State, model::GPmodel, eng::MersenneTwister)
@@ -45,4 +52,15 @@ function energy(x_mc::Vector{State}, model::GPmodel)
     end
     ene = Folds.sum(localenergy(x, model) for x in x_mc)
     real(ene / c.NMC)
+end
+
+function nls(func, params...; ini = [0.0])
+    if typeof(ini) <: Number
+        r = nlsolve((vout,vin)->vout[1]=func(vin[1],params...), [ini])
+        v = r.zero[1]
+    else
+        r = nlsolve((vout,vin)->vout .= func(vin,params...), ini)
+        v = r.zero
+    end
+    return v
 end

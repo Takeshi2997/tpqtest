@@ -1,7 +1,7 @@
 include("./setup.jl")
 include("./model.jl")
 include("./hamiltonian.jl")
-using Base.Threads, LinearAlgebra, Random, Folds
+using Base.Threads, LinearAlgebra, Random, Folds, Optim
 
 function imaginarytime(model::GPmodel)
     data_x, data_y, τ = model.data_x, model.data_y, model.τ
@@ -12,7 +12,8 @@ function imaginarytime(model::GPmodel)
     end
     data_y ./= norm(data_y)
     model_loc = GPmodel(data_x, data_y, τ)
-    τ0 = parameterfitting(model_loc, τ)
+    res = optimize(model_loc -> f(model_loc, τ1), model_loc -> g!(model_loc, τ1), [0.0], LBFGS)
+    τ0 = Optim.minimizer(res)
     GPmodel(model_loc, τ0)
 end
 
@@ -54,13 +55,4 @@ function energy(x_mc::Vector{State}, model::GPmodel)
     real(ene / c.NMC)
 end
 
-function nls(func, params...; ini = [0.0])
-    if typeof(ini) <: Number
-        r = nlsolve((vout,vin)->vout[1]=func(vin[1],params...), [ini])
-        v = r.zero[1]
-    else
-        r = nlsolve((vout,vin)->vout .= func(vin,params...), ini)
-        v = r.zero
-    end
-    return v
-end
+

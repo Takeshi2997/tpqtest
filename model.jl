@@ -70,13 +70,22 @@ function predict(x::State, model::GPmodel) where {S<:Real}
     log(sqrt(var) * randn(typeof(mu)) + mu)
 end
 
-function diffloglikelifood(τ::S, model::GPmodel)
+function f(model::GPmodel, τ::S) where {S<:Real}
+    model_loc = GPmodel(model, τ)
+    data_x, data_y, pvec, KI = model_loc.data_x, model_loc.pvec, model_loc.KI
+  
+    K = copy(KI)
+    makematrix(K, data_x, τ)
+    log(det(K)) + dot(exp.(data_y), pvec)
+end
+
+function g!(model::GPmodel, τ::S) where {S<:Real}
     model_loc = GPmodel(model, τ)
     data_x, pvec, KI = model_loc.data_x, model_loc.pvec, model_loc.KI
   
-    dK = Array{T}(undef, c.NData, c.NData)
+    dK = copy(KI)
     diffmakematrix(dK, data_x, τ)
-    -tr(KI * dK) + dot(pvec, dK * pvec)
+    -tr(KI * dK) + real(dot(pvec, dK * pvec))
 end
     
 

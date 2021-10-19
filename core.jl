@@ -12,12 +12,12 @@ function imaginarytime(model::GPmodel)
     end
     data_y ./= norm(data_y)
     model_loc = GPmodel(data_x, data_y, τ)
-    τ0 = parameterfitting(model_loc)
+    τ0 = parameterfitting(model_loc, τ)
     GPmodel(model_loc, τ0)
 end
 
-function parameterfitting(model::GPmodel) where {S<:Real}
-    τ0 = nls(diffloglikelifood, model, ini=0.2)
+function parameterfitting(model::GPmodel, τ::S) where {S<:Real}
+    τ0 = nls(diffloglikelifood, model, ini=τ)
     return τ0
 end
 

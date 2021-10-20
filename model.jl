@@ -70,7 +70,8 @@ function predict(x::State, model::GPmodel) where {S<:Real}
     log(sqrt(var) * randn(typeof(mu)) + mu)
 end
 
-function f(model::GPmodel, τ::S) where {S<:Real}
+function f(τv::Vector{S}, model::GPmodel) where {S<:Real}
+    τ = τv[1]
     model_loc = GPmodel(model, τ)
     data_x, data_y, pvec, KI = model_loc.data_x, model_loc.pvec, model_loc.KI
   
@@ -80,12 +81,13 @@ function f(model::GPmodel, τ::S) where {S<:Real}
 end
 
 function g!(stor, τv::Vector{S}, model::GPmodel) where {S<:Real}
+    τ = τv[1]
     model_loc = GPmodel(model, τ)
     data_x, pvec, KI = model_loc.data_x, model_loc.pvec, model_loc.KI
   
     dK = copy(KI)
     diffmakematrix(dK, data_x, τ)
-    real(tr(KI * dK) - dot(pvec, dK * pvec))
+    stor[1] = real(tr(KI * dK) - dot(pvec, dK * pvec))
 end
     
 

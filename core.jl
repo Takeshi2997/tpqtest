@@ -10,10 +10,11 @@ function imaginarytime(model::GPmodel)
         h = localenergy(x, model)
         data_y[n] += log(1.0 - c.NSpin * c.Δτ / 2.0 * h)
     end
-    data_y ./= norm(data_y)
+    ψ = exp.(data_y)
+    data_y .-= log(sum(ψ) / c.NData)
     model_loc = GPmodel(data_x, data_y, τ)
-    res = optimize(model_loc -> f(model_loc, τ1), model_loc -> g!(model_loc, τ1), [0.0], LBFGS)
-    τ0 = Optim.minimizer(res)
+    res = optimize(τ1 -> f(τ1, model_loc), (stor, τ1) -> g!(stor, τ1, model_loc), [0.0], LBFGS())
+    τ0 = Optim.minimizer(res)[1]
     GPmodel(model_loc, τ0)
 end
 

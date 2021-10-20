@@ -79,13 +79,13 @@ function f(model::GPmodel, τ::S) where {S<:Real}
     log(det(K)) + dot(exp.(data_y), pvec)
 end
 
-function g!(model::GPmodel, τ::S) where {S<:Real}
+function g!(stor, τv::Vector{S}, model::GPmodel) where {S<:Real}
     model_loc = GPmodel(model, τ)
     data_x, pvec, KI = model_loc.data_x, model_loc.pvec, model_loc.KI
   
     dK = copy(KI)
     diffmakematrix(dK, data_x, τ)
-    -tr(KI * dK) + real(dot(pvec, dK * pvec))
+    real(tr(KI * dK) - dot(pvec, dK * pvec))
 end
     
 

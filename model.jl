@@ -73,7 +73,7 @@ end
 function f(τv::Vector{S}, model::GPmodel) where {S<:Real}
     τ = τv[1]
     model_loc = GPmodel(model, τ)
-    data_x, data_y, pvec, KI = model_loc.data_x, model_loc.pvec, model_loc.KI
+    data_x, data_y, pvec, KI = model_loc.data_x, model.data_y, model_loc.pvec, model_loc.KI
   
     K = copy(KI)
     makematrix(K, data_x, τ)

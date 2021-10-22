@@ -5,13 +5,14 @@ using Base.Threads, LinearAlgebra, Random, Folds, Optim
 
 function imaginarytime(model::GPmodel)
     data_x, data_y, τ = model.data_x, model.data_y, model.τ
+    data_ψ = exp.(data_y)
     @threads for n in 1:c.NData
         x = data_x[n]
         h = localenergy(x, model)
-        data_y[n] += log(1.0 - c.NSpin * c.Δτ / 2.0 * h)
+        data_ψ[n] *= (1.0 - c.NSpin * c.Δτ / 2.0 * h)
     end
-    ψ = exp.(data_y)
-    data_y .-= log(sum(ψ) / c.NData)
+    data_y = log.(data_ψ)
+    data_y .-= log(sum(data_ψ) / c.NData)
     model_loc = GPmodel(data_x, data_y, τ)
     res = optimize(τ1 -> f(τ1, model_loc), (stor, τ1) -> g!(stor, τ1, model_loc), [τ], LBFGS())
     τ0 = Optim.minimizer(res)[1]

@@ -26,9 +26,12 @@ function main(filename::String)
     end
 
     ene = 0.0
-    for k in 0:c.iT
-        β = c.Δτ * k
+    for k in 1:c.iT
+        for l in 1:c.iM
+            model = imaginarytime(model)
+        end
         ene = energy(batch_x, model)
+        β = c.Δβ * k
         open("./data/" * filename, "a") do io
             write(io, string(k))
             write(io, "\t")
@@ -39,7 +42,6 @@ function main(filename::String)
             write(io, string(exp(model.τ)))
             write(io, "\n")
         end
-        model = imaginarytime(model)
     end
 end
 

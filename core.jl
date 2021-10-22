@@ -13,7 +13,7 @@ function imaginarytime(model::GPmodel)
     ψ = exp.(data_y)
     data_y .-= log(sum(ψ) / c.NData)
     model_loc = GPmodel(data_x, data_y, τ)
-    res = optimize(τ1 -> f(τ1, model_loc), (stor, τ1) -> g!(stor, τ1, model_loc), [0.0], LBFGS())
+    res = optimize(τ1 -> f(τ1, model_loc), (stor, τ1) -> g!(stor, τ1, model_loc), [τ], LBFGS())
     τ0 = Optim.minimizer(res)[1]
     GPmodel(model_loc, τ0)
 end

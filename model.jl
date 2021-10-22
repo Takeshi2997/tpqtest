@@ -77,7 +77,7 @@ function f(τv::Vector{S}, model::GPmodel) where {S<:Real}
   
     K = copy(KI)
     makematrix(K, data_x, τ)
-    real(log(det(K)) + dot(exp.(data_y), pvec))
+    real(log(det(K)) + dot(exp.(data_y), pvec)) + c.λ * τ^2
 end
 
 function g!(stor, τv::Vector{S}, model::GPmodel) where {S<:Real}
@@ -87,7 +87,7 @@ function g!(stor, τv::Vector{S}, model::GPmodel) where {S<:Real}
   
     dK = copy(KI)
     diffmakematrix(dK, data_x, τ)
-    stor[1] = real(tr(KI * dK) - dot(pvec, dK * pvec))
+    stor[1] = real(tr(KI * dK) - dot(pvec, dK * pvec)) + 2 * c.λ * τ
 end
     
 

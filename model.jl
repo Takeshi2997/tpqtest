@@ -5,6 +5,11 @@ mutable struct State{T<:Real}
     spin::Vector{T}
 end
 
+mutable struct Data{T<:Complex}
+    data_x::Vector{State}
+    data_y::Vector{T}
+end
+
 mutable struct GPmodel{T<:Complex, S<:Real}
     data_x::Vector{State}
     data_y::Vector{T}

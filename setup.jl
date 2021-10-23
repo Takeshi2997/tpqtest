@@ -3,6 +3,7 @@ struct GP_Data{T<:Real, S<:Integer}
     NData::S
     NMC::S
     MCSkip::S
+    NBatch::S
     iT::S
     H::T
     t::T
@@ -18,6 +19,7 @@ function GP_Data()
     NData = 64
     NMC = 1024
     MCSkip = 16
+    NBatch = 24
     iT = 100
     H = 2.0
     t = 1.0
@@ -27,6 +29,6 @@ function GP_Data()
     Δβ = Δτ * iM
     B = 1.0
     λ = 0.2
-    GP_Data(NSpin, NData, NMC, MCSkip, iT, H, t, J, iM, Δτ, Δβ, B, λ)
+    GP_Data(NSpin, NData, NMC, MCSkip, NBatch, iT, H, t, J, iM, Δτ, Δβ, B, λ)
 end
 c = GP_Data()

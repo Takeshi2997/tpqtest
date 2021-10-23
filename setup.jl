@@ -22,11 +22,11 @@ function GP_Data()
     H = 2.0
     t = 1.0
     J = 1.0
-    iM = 10
-    Δτ = 0.01
+    iM = 100
+    Δτ = 0.001
     Δβ = Δτ * iM
     B = 1.0
-    λ = 1.0
+    λ = 0.2
     GP_Data(NSpin, NData, NMC, MCSkip, iT, H, t, J, iM, Δτ, Δβ, B, λ)
 end
 c = GP_Data()

@@ -46,7 +46,7 @@ function main(filename::String)
             write(io, "\t")
             write(io, string(β))
             write(io, "\t")
-            write(io, string(exp(model.τ)))
+            write(io, string(exp(models[1].τ)))
             write(io, "\n")
         end
     end

@@ -32,7 +32,7 @@ end
 function kernel(x1::State, x2::State, τ::S) where {S<:Real}
     v = norm(x1.spin - x2.spin)^2
     v /= c.NSpin
-    c.B * exp(-v / (c.λ + exp(τ)))
+    c.B * exp(-v / exp(τ))
 end
 
 function makematrix(K::Array{T}, data_x::Vector{State}, τ::S) where{T<:Complex, S<:Real}
@@ -49,7 +49,7 @@ function diffmakematrix(K::Array{T}, data_x::Vector{State}, τ::S) where{T<:Comp
         for j in i:length(data_x)
             x1 = data_x[i]
             x2 = data_x[j]
-            K[i, j] = norm(x1.spin-x2.spin)^2 / (c.λ +  exp(τ))^2 * exp(τ) * kernel(x1, x2, τ)
+            K[i, j] = norm(x1.spin-x2.spin)^2 / exp(τ) * kernel(x1, x2, τ)
             K[j, i] = K[i, j]
         end
     end
@@ -82,7 +82,7 @@ function f(τv::Vector{S}, model::GPmodel) where {S<:Real}
   
     K = copy(KI)
     makematrix(K, data_x, τ)
-    real(log(det(K)) + dot(exp.(data_y), pvec))
+    real(log(det(K)) + dot(exp.(data_y), pvec)) + c.λ * τ^2
 end
 
 function g!(stor, τv::Vector{S}, model::GPmodel) where {S<:Real}
@@ -92,7 +92,7 @@ function g!(stor, τv::Vector{S}, model::GPmodel) where {S<:Real}
   
     dK = copy(KI)
     diffmakematrix(dK, data_x, τ)
-    stor[1] = real(tr(KI * dK) - dot(pvec, dK * pvec))
+    stor[1] = real(tr(KI * dK) - dot(pvec, dK * pvec)) + 2 * c.λ * τ
 end
     
 

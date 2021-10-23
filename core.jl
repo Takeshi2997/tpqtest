@@ -9,7 +9,7 @@ function imaginarytime(model::GPmodel)
     @threads for n in 1:c.NData
         x = data_x[n]
         h = localenergy(x, model)
-        data_ψ[n] *= (1.0 - c.NSpin * c.Δτ / 2.0 * h)
+        data_ψ[n] *= (c.l - h)
     end
     data_y = log.(data_ψ)
     data_y .-= log(sum(data_ψ) / c.NData)

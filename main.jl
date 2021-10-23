@@ -27,11 +27,9 @@ function main(filename::String)
 
     ene = 0.0
     for k in 1:c.iT
-        for l in 1:c.iM
-            model = imaginarytime(model)
-        end
+        model = imaginarytime(model)
         ene = energy(batch_x, model)
-        β = c.Δβ * k
+        β = 2 * k / c.NSpin / (c.l - ene)
         open("./data/" * filename, "a") do io
             write(io, string(k))
             write(io, "\t")

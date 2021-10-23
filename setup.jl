@@ -8,8 +8,7 @@ struct GP_Data{T<:Real, S<:Integer}
     t::T
     J::T
     iM::S
-    Δτ::T
-    Δβ::T
+    l::T
     B::T
     λ::T
 end
@@ -23,10 +22,9 @@ function GP_Data()
     t = 1.0
     J = 1.0
     iM = 100
-    Δτ = 0.001
-    Δβ = Δτ * iM
+    l = 0.8
     B = 1.0
     λ = 0.2
-    GP_Data(NSpin, NData, NMC, MCSkip, iT, H, t, J, iM, Δτ, Δβ, B, λ)
+    GP_Data(NSpin, NData, NMC, MCSkip, iT, H, t, J, iM, l, B, λ)
 end
 c = GP_Data()

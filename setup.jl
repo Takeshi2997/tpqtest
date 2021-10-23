@@ -7,7 +7,6 @@ struct GP_Data{T<:Real, S<:Integer}
     H::T
     t::T
     J::T
-    iM::S
     l::T
     B::T
     λ::T
@@ -21,10 +20,9 @@ function GP_Data()
     H = 2.0
     t = 1.0
     J = 1.0
-    iM = 100
     l = 0.8
     B = 1.0
     λ = 0.2
-    GP_Data(NSpin, NData, NMC, MCSkip, iT, H, t, J, iM, l, B, λ)
+    GP_Data(NSpin, NData, NMC, MCSkip, iT, H, t, J, l, B, λ)
 end
 c = GP_Data()

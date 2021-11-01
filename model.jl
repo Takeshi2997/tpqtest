@@ -1,8 +1,9 @@
+
 include("./setup.jl")
 include("./hamiltonian.jl")
-using LinearAlgebra
+using LinearAlgebra, CUDA
 
 mutable struct GPmodel{T<:Complex}
-    ρ::Array{T}
+    ρ::Hermitian{T, CuArray{T, 2}}
 end
  

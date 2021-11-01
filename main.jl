@@ -3,7 +3,6 @@ include("./model.jl")
 include("./core.jl")
 using LinearAlgebra, Random, CUDA
 
-EngArray = Vector{MersenneTwister}(undef, nthreads())
 function main(filename::String)
     model = GPmodel(I)
 
@@ -27,4 +26,6 @@ rm(dirname, force=true, recursive=true)
 mkdir("./data")
 filename  = "physicalvalue.txt"
 touch("./data/" * filename)
+CUDA.reclaim()
 main(filename)
+

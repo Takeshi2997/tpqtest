@@ -1,60 +1,107 @@
 include("./setup.jl")
 include("./model.jl")
 include("./hamiltonian.jl")
-using Base.Threads, LinearAlgebra, Random, Folds, Optim
+using Base.Threads, LinearAlgebra, Random, Folds
 
-function imaginarytime(model::GPmodel)
-    data_x, data_y, τ = model.data_x, model.data_y, model.τ
-    data_ψ = exp.(data_y)
-    @threads for n in 1:c.NData
-        x = data_x[n]
-        h = localenergy(x, model)
-        data_ψ[n] *= (c.l - h)
+function imaginarytime(model::GPmodel, params::Parameters)
+    data_x, data_ψ = model.data_x, model.data_ψ
+    @threads for i in 1:c.NData
+        x = data_x[i]
+        ψ = data_ψ[i]
+        epsi = localenergy_psi(x, log(ψ), model)
+        data_ψ[i] = ψ - c.Δτ * epsi
     end
-    data_y = log.(data_ψ)
-    data_y .-= log(sum(data_ψ) / c.NData)
-    model_loc = GPmodel(data_x, data_y, τ)
-    res = optimize(τ1 -> f(τ1, model_loc), (stor, τ1) -> g!(stor, τ1, model_loc), [τ], LBFGS())
-    τ0 = Optim.minimizer(res)[1]
-    GPmodel(model_loc, τ0)
+    data_ψ ./= norm(data_ψ)
+    GPmodel(data_x, data_ψ, params)
 end
 
-function parameterfitting(model::GPmodel, τ::S) where {S<:Real}
-    τ0 = nls(diffloglikelifood, model, ini=τ)
-    return τ0
+function localenergy_psi(x::Vector{S}, y::T, model::GPmodel) where {T<:Complex, S<:Real}
+    epsi = 0.0im
+    @simd for i in 1:c.NSpin
+        ep = hamiltonian(i, x, y, model)
+        epsi += ep
+    end
+    epsi * exp(y)
 end
 
-function tryflip(x::State, model::GPmodel, eng::MersenneTwister)
+function tryflip(x::Vector{T}, model::GPmodel, eng::MersenneTwister) where {T<:Real}
     pos = rand(eng, collect(1:c.NSpin))
     y = predict(x, model)
-    xflip_spin = copy(x.spin)
-    xflip_spin[pos] *= -1
-    xflip = State(xflip_spin)
+    xflip = copy(x)
+    xflip[pos] *= -1
     y_new = predict(xflip, model)
     prob = exp(2 * real(y_new - y))
-    x.spin[pos] *= ifelse(rand(eng) < prob, -1, 1)
-    State(x.spin)
+    x[pos] *= ifelse(rand(eng) < prob, -1, 1)
+    x
 end
 
-function localenergy(x::State, model::GPmodel)
+function localenergy(x::Vector{T}, model::GPmodel) where {T<:Real}
     y = predict(x, model)
     eloc = 0.0im
     @simd for i in 1:c.NSpin
         e = hamiltonian(i, x, y, model)
-        eloc += e / c.NSpin
+        o = paramvector(i, x, y, model)
+        eloc += e
     end
     eloc
 end
 
-function energy(x_mc::Vector{State}, model::GPmodel)
+function energy(x_mc::Vector{Vector{T}}, model::GPmodel) where {T<:Real}
     @threads for i in 1:c.NMC
-        @simd for j in 1:c.MCSkip
+        for j in 1:c.MCSkip
             eng = EngArray[threadid()]
             x_mc[i] = tryflip(x_mc[i], model, eng)
         end
     end
-    ene = Folds.sum(localenergy(x, model) for x in x_mc)
+    ene = Folds.sum(physicalval(x, model) for x in x_mc)
     real(ene / c.NMC)
 end
 
+function physicalval(x::Vector{T}, model::GPmodel) where {T<:Real}
+    y = predict(x, model)
+    eloc = 0.0im
+    @simd for i in 1:c.NSpin
+        e = hamiltonian(i, x, y, model)
+        o = paramvector(i, x, y, model)
+        eloc += e
+    end
+    oloc = zeros(typeof(y), c.NData^2 + c.NData)
+    k = 1
+    @simd for i in 1:c.NData
+        for j in 1:c.NData
+            o = paramvector(i, j, x, y, model)
+            oloc[k] += o
+            k += 1
+        end
+    end
+    @simd for i in 1:c.NData
+        o = paramvector(i, x, y, model)
+        oloc[k] += o
+        k += 1
+    end
+    eoloc = e * oloc
+    ooloc = oloc * oloc'
+    [oloc, eoloc, ooloc]
+end
 
+function paramsupdate(params::Parameters, e::T, x_mc::Vector{Vector{T}}, model::GPmodel) where {T<:Real}
+    @threads for i in 1:c.NMC
+        for j in 1:c.MCSkip
+            eng = EngArray[threadid()]
+            x_mc[i] = tryflip(x_mc[i], model, eng)
+        end
+    end
+    vals = Folds.sum(physicalval(x, model) for x in x_mc)
+    o  = real(vals[1]) ./ c.NMC
+    eo = real(vals[2]) ./ c.NMC
+    oo = real(vals[3]) ./ c.NMC
+
+    W, b = params.W, params.b
+    R = eo - e * o
+    S = oo - o * o'
+    pramsvector = (S + 1e-3 * I)\R
+    ΔWvector = paramsvector[1:c.NData^2]
+    ΔW = reshape(ΔWvector, c.NData, c.NData) 
+    Δb = paramsvector[c.NData^2:end]
+    Parameters(W+c.η*ΔW, b+c.η*Δb)
+end

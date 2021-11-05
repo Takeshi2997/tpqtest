@@ -2,42 +2,43 @@ include("./setup.jl")
 include("./model.jl")
 include("./core.jl")
 using LinearAlgebra, Random, Distributions
+using Base.Threads
+
 
 EngArray = Vector{MersenneTwister}(undef, nthreads())
 function main(filename::String)
     for i in 1:nthreads()
         EngArray[i] = MersenneTwister(i)
     end
+
     eng = EngArray[1]
-    data_x = Vector{State}(undef, c.NData)
-    for i in 1:c.NData
-        data_x[i] = State(rand([1.0, -1.0], c.NSpin))
-    end
+    data_x = [rand(eng, [1.0, -1.0], c.NSpin)  for i in 1:c.NData]
     bimu = zeros(Float64, 2 * c.NData)
-    biI  = Array(Diagonal(ones(Float64, 2 * c.NData)))
+    biI  = Array(Diagonal(ones(Float64, 2 * c.NData))) ./ 2^c.NSpin
     biψ  = rand(MvNormal(bimu, biI))
-    data_y = log.(biψ[1:c.NData] .+ im * biψ[c.NData+1:end])
-    model = GPmodel(data_x, data_y, -1.0)
+    data_ψ = biψ[1:c.NData] .+ im * biψ[c.NData+1:end]
+    data_ψ ./= norm(data_ψ)
+    model = GPmodel(data_x, data_ψ, I)
+    batch_x = [rand(eng, [1.0, -1.0], c.NSpin)  for i in 1:c.NMC]
+    
+    params = Parameters(I, zeros(Float64, c.NData))
+    for k in 1:c.T
+        for l in 1:100
+            # Kernel update
+            params = paramsupdate(params, ene, batch_x, model)
+            model  = GPmodel(model, params)
+            # Data update
+            model = imaginarytime(model, params)
+        end
 
-    batch_x = Vector{State}(undef, c.NMC)
-    for i in 1:c.NMC
-        x = rand(eng, [1.0, -1.0], c.NSpin)
-        batch_x[i] = State(x)
-    end
-
-    ene = 0.0
-    for k in 1:c.iT
-        model = imaginarytime(model)
-        ene = energy(batch_x, model)
-        β = 2 * k / c.NSpin / (c.l - ene)
+        ene = expectedvalues(batch_x, model)
+        β = k * l * c.Δτ
         open("./data/" * filename, "a") do io
             write(io, string(k))
             write(io, "\t")
             write(io, string(ene))
             write(io, "\t")
             write(io, string(β))
-            write(io, "\t")
-            write(io, string(exp(model.τ)))
             write(io, "\n")
         end
     end

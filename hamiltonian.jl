@@ -1,30 +1,59 @@
-function hamiltonian(i::Integer, x::State, y::T, model::GPmodel) where {T<:Complex}
+using LinearAlgebra
+
+function hamiltonian(i::Integer, x::Vector{S}, y::T, model::GPmodel) where {T<:Complex, S<:Real}
+#     hamiltonian_heisenberg(i, x, y, model)
     hamiltonian_ising(i, x, y, model)
-#    hamiltonian_heisenberg(x, y, model)
-#    hamiltonian_XY(x, y, model)
+#     hamiltonian_XY(i, x, y, model)
 end
 
-function hamiltonian_heisenberg(i::Integer, x::State, y::T, model::GPmodel) where {T<:Complex}
-    xflip_spin = copy(x.spin)
-    xflip_spin[i] *= -1
-    xflip = State(xflip_spin)
+function hamiltonian_heisenberg(i::Integer, x::Vector{S}, y::T, model::GPmodel) where {T<:Complex, S<:Real}
+    out = 0.0 + 0.0im
+    out += x[i] * x[i%c.NSpin+1]
+    if real(out) < 0.0
+        xflip = copy(x)
+        xflip[i] *= -1
+        xflip[i%c.NSpin+1] *= -1
+        yflip = predict(xflip, model)
+        out += 2.0 * exp(yflip - y)
+    end
+    c.J * out / 4.0 / c.NSpin
+end
+
+function hamiltonian_ising(i::Integer, x::Vector{S}, y::T, model::GPmodel) where {T<:Complex, S<:Real}
+    xflip = copy(x)
+    xflip[i] *= -1
     yflip = predict(xflip, model)
-    -c.J * (1.0 + (2.0 * exp(yflip - y) - 3.0) * (x.spin[i] * x.spin[i%c.NSpin+1] < 0)) / 4.0
+    (-x.spin[i] * x.spin[i%c.NSpin+1] / 4.0 - c.H * exp(yflip - y) / 2.0) / c.NSpin
 end
 
-function hamiltonian_ising(i::Integer, x::State, y::T, model::GPmodel) where {T<:Complex}
-    xflip_spin = copy(x.spin)
-    xflip_spin[i] *= -1
-    xflip = State(xflip_spin)
-    yflip = predict(xflip, model)
-    -x.spin[i] * x.spin[i%c.NSpin+1] / 4.0 - c.H * exp(yflip - y) / 2.0
+function hamiltonian_XY(i::Integer, x::Vector{S}, y::T, model::GPmodel) where {T<:Complex, S<:Real}
+    out = 0.0 + 0.0im
+    p = x[i] * x[i%c.NSpin+1]
+    if p < 0.0
+        xflip = copy(x)
+        xflip[i] *= -1
+        xflip[i%c.NSpin+1] *= -1
+        yflip = predict(xflip, model)
+        out += exp(yflip - y)
+    end
+    c.t * out / 2.0 / c.NSpin
 end
 
-function hamiltonian_XY(i::Integer, x::State, y::T, model::GPmodel) where {T<:Complex}
-    xflip_spin = copy(x.spin)
-    xflip_spin[i] *= -1
-    xflip = State(xflip_spin)
-    yflip = predict(xflip, model)
-    c.t * exp(yflip - y) * (x.spin[i] * x.spin[i%c.NSpin+1] < 0)
+function paramvector(i::Integer, j::Integer, x::Vector{S}, y::T, model::GPmodel) where {T<:Complex, S<:Real}
+    out = 0.0 + 0.0im
+    xflip = copy(x)
+    xflip[i] *= -1
+    xflip[j] *= -1
+    yflip = predict(xflip, model) 
+    out += -x[i] * x[j] * exp(yflip - y)
+    4.0 * out / c.NData^2
 end
 
+function paramvector(i::Integer, x::Vector{S}, y::T, model::GPmodel) where {T<:Complex, S<:Real}
+    out = 0.0 + 0.0im
+    xflip = copy(x)
+    xflip[i] *= -1
+    yflip = predict(xflip, model) 
+    out += -x[i] * exp(yflip - y)
+    2.0 * out / c.NData
+end
